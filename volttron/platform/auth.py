@@ -133,7 +133,12 @@ class AuthService(Agent):
         entries.sort()
         self.auth_entries = entries
         if self._is_connected:
-            self._send_update()
+            try:
+                _log.debug("Sending auth updates to peers")
+                self._send_update()
+            except BaseException as e:
+                _log.error("Exception sending auth updates to peer. {}".format(e))
+                raise e
         _log.info('auth file %s loaded', self.auth_file_path)
 
     def get_protected_topics(self):
@@ -158,8 +163,8 @@ class AuthService(Agent):
 
     def _send_update(self):
         user_to_caps = self.get_user_to_capabilities()
-        peers = self.vip.peerlist().get(timeout=0.1)
-        _log.debug("AUTH new capabilities update: {}".format(user_to_caps))
+        peers = self.vip.peerlist().get(timeout=0.5)
+        _log.debug("after getting peerlist to send auth updates")
 
         for peer in peers:
             if peer not in [self.core.identity]:
@@ -474,7 +479,7 @@ class AuthService(Agent):
             for peer in peers:
                 self._user_to_permissions[peer].clear()
         else:
-            for topic, caps_for_topic in topic_to_caps.iteritems():
+            for topic, caps_for_topic in topic_to_caps.items():
                 for user in user_to_caps:
                     try:
                         caps_for_user = user_to_caps[user]

@@ -703,7 +703,7 @@ class Certs(object):
             mod_key = execute_command(cmd,
                                       err_prefix="Error getting modulus of "
                                                  "private key")
-        except Exception as e:
+        except RuntimeError as e:
             return False
 
         return mod_pub == mod_key
@@ -813,7 +813,11 @@ class Certs(object):
         ca_cert = self.cert(ca_name)
 
         issuer = ca_cert.subject
-        ski = x509.SubjectKeyIdentifier.from_public_key(ca_cert.public_key())
+        # cryptography 2.7
+        # ski = x509.SubjectKeyIdentifier.from_public_key(ca_cert.public_key())
+        # crptography 2.2.2
+        ski = ca_cert.extensions.get_extension_for_class(
+            x509.SubjectKeyIdentifier)
 
         key = rsa.generate_private_key(
             public_exponent=65537,
@@ -872,6 +876,11 @@ class Certs(object):
                     _create_fingerprint(key.public_key())),
                 critical=False
             )
+            # cryptography 2.7
+            # .add_extension(
+            #     x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+            #     critical=False
+            # )
         else:
             # if type is server or client.
             cert_builder = cert_builder.add_extension(

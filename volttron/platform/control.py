@@ -41,6 +41,7 @@ import collections
 import hashlib
 import logging
 import logging.handlers
+import logging.config
 import os
 import re
 import shutil
@@ -183,8 +184,6 @@ class ControlService(BaseAgent):
     def send_alert(self, agent_id, agent_name):
         """Send an alert for the group, summarizing missing topics.
 
-        :param unseen_topics: List of topics that were expected but not received
-        :type unseen_topics: list
         """
         alert_key = "Agent {}({}) stopped unexpectedly".format(agent_name,
                                                                agent_id)
@@ -553,7 +552,7 @@ def backup_agent_data(output_filename, source_dir):
 
 def restore_agent_data_from_tgz(source_file, output_dir):
     # Open tarfile
-    with tarfile.open(mode="r:gz", fileobj=file(source_file)) as tar:
+    with tarfile.open(mode="r:gz", fileobj=open(source_file)) as tar:
         tar.extractall(output_dir)
 
 
@@ -1141,11 +1140,11 @@ def _comma_split(line):
 
 
 def _parse_capabilities(line):
-    if not isinstance(line, basestring):
+    if not isinstance(line, str):
         return line
     line = line.strip()
     try:
-       result = json.loads(line.replace("'", "\""))
+       result = jsonapi.loads(line.replace("'", "\""))
     except Exception as e:
         result = _comma_split(line)
     return result
@@ -1740,7 +1739,7 @@ def list_users(opts):
 def list_user_properties(opts):
     try:
         props = rmq_mgmt.get_user_props(opts.user)
-        for key, value in props.iteritems():
+        for key, value in props.items():
             _stdout.write("{0}: {1} \n".format(key, value))
     except requests.exceptions.HTTPError as e:
         _stdout.write("No User Found: {} \n".format(opts.user))
